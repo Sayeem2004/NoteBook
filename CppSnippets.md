@@ -16,8 +16,8 @@ int main() {
 ```cpp
 template<typename T> struct segment_tree {
     std::vector<T> SEG; int N; T DEF; T (*OP)(T, T); // Variables
-    segment_tree(int n, T d = NULL, T (*c)(T, T) = [](T a, T b) { return a+b; })
-        : N(n), DEF(d), OP(c) { SEG.assign(2*N, DEF); } // Constructors
+    segment_tree(int n, T d = NULL, T (*C)(T, T) = [](T a, T b) { return a+b; })
+        : N(n), DEF(d), OP(C) { SEG.assign(2*N, DEF); } // Constructors
 
     void pull(int p) { SEG[p] = OP(SEG[2*p], SEG[2*p+1]); } // Mutators
     void update(int p, T v) { if (p < 0 || p >= N) return;
@@ -36,11 +36,11 @@ template<typename T> struct segment_tree {
 
 ```cpp
 template<typename T> struct disjoint_set {
-    std::unordered_map<T, T> TREE; std::unordered_map<T, int> SIZE; // Variables
+    std::unordered_map<T, T> TREE; std::unordered_map<T, int> SIZE; int CNT; // Variables
     disjoint_set(std::vector<T> V = {}) { for (T x : V) add(x); } // Constructors
 
-    bool add(T x) { return TREE.count(x) ? 0 : (TREE[x] = x, SIZE[x] = 1); } // Mutators
-    bool unite(T x, T y) { x = get(x), y = get(y); if (x == y) return 0; // Union by size
+    bool add(T x) { return TREE.count(x) ? 0 : (CNT++, TREE[x] = x, SIZE[x] = 1); } // Mutators
+    bool unite(T x, T y) { x = get(x), y = get(y); if (x == y) return 0; CNT--; // Union by size
         if (SIZE[x] < SIZE[y]) std::swap(x, y); TREE[y] = x; SIZE[x] += SIZE[y]; return 1; }
 
     int size(T x) { return SIZE[get(x)]; } bool same(T x, T y) { return get(x) == get(y); } // Accessors
@@ -69,6 +69,7 @@ template<typename T> struct combo_cache {
     T ift(T n) { return (n >= 0 && n <= MXN ? IFT[n] : -1); }
     T fct(T n) { return (n >= 0 && n <= MXN ? FCT[n] : -1); }
     T drg(T n) { return (n >= 0 && n <= MXN ? DRG[n] : -1); }
+    T pow(T n, T k) { T r = 1; while (k > 0) { if (k&1) r = r*n%MOD; n = n*n%MOD; k >>= 1; } return r; }
     T cat(T n) { return (n >= 0 && n <= MXN/2 ? bin(2*n, n) * inv(n+1) % MOD : -1); }
     T bin(T n, T k) { return (k < n ? fct(n) * ift(k) % MOD * ift(n-k) % MOD : -1); }
     T str(T n, T k) { return bin(n + k - 1, n); }
@@ -87,29 +88,11 @@ template <typename T> using ordered_set = __gnu_pbds::tree<
 >;
 ```
 
-- **Generic Trie**
-
-```cpp
-template<typename T, typename TL> struct generic_trie {
-    struct node { int CNT, END; std::unordered_map<T, node*> NXT; node() : CNT(0), END(0) {} } *HEAD;
-    generic_trie() : HEAD(new node()) { } // Variables & Constructors
-
-    void insert(TL val) { node *curr = HEAD; curr->CNT++; for (T v : val) { // Mutators
-        if (!curr->NXT.count(v)) curr->NXT[v] = new node();
-        curr = curr->NXT[v]; curr->CNT++; } curr->END = 1; }
-
-    bool search(TL val) { node *curr = HEAD; for (T v : val) { // Accessors
-        if (!curr->NXT.count(v)) return 0; curr = curr->NXT[v]; } return curr->END; }
-    int count(TL val) { node *curr = HEAD; for (T v : val) {
-        if (!curr->NXT.count(v)) return 0; curr = curr->NXT[v]; } return curr->CNT; }
-};
-```
-
 - **Topological Sort**
 ```cpp
 template<typename T> struct topo_sort {
     std::vector<std::vector<T>> ADJ; std::vector<T> ANS, VIS; T N; // Variables
-    topo_sort(T n, std::vector<std::vector<T>> &adj) : ADJ(adj), N(n) { } // Constructors
+    topo_sort(T n, std::vector<std::vector<T>> &A) : ADJ(A), N(n) { } // Constructors
 
     void dfs(T v) { VIS[v] = 1; for (T u : ADJ[v]) if (!VIS[u]) { dfs(u); } ANS.push_back(v); } // Accessors
     std::vector<T> sort() { ANS.clear(); VIS.assign(N, 0); for (T i = 0; i < N; i++) {
@@ -123,7 +106,7 @@ template<typename T> struct topo_sort {
 ```cpp
 template<typename T> struct segment_lca { // Variables & Constructors
     std::vector<std::vector<T>> ADJ; std::vector<T> HGT, FST, VIS, EUL, SEG; T N, P, R;
-    segment_lca(T n, std::vector<std::vector<T>> &adj, T r = 0) : ADJ(adj), N(n), P(0) {
+    segment_lca(T n, std::vector<std::vector<T>> &A, T r = 0) : ADJ(A), N(n), P(0) {
         HGT.resize(N); FST.resize(N); VIS.resize(N); EUL.resize(2*N); dfs(r, 0);
         SEG.resize(4*N); for (T i = 0; i < 2*N; i++) update(i, EUL[i]); }
 
@@ -145,7 +128,7 @@ template<typename T> struct segment_lca { // Variables & Constructors
 ```cpp
 template<typename T> struct sparse_table {
     std::vector<std::vector<T>> ST; int N, K; T (*OP)(T, T); // Variables & Constructors
-    sparse_table(int n, std::vector<T> &V, T (*c)(T, T) = [](T a, T b) { return std::min(a, b); }) : N(n), OP(c) {
+    sparse_table(int n, std::vector<T> &V, T (*C)(T, T) = [](T a, T b) { return std::min(a, b); }) : N(n), OP(C) {
         K = log2(N); ST.assign(K+1, std::vector<T>(N)); std::copy(V.begin(), V.end(), ST[0].begin());
         for (int k = 1; k <= K; k++) for (int i = 0; i + (1 << k) <= N; i++)
         ST[k][i] = OP(ST[k-1][i], ST[k-1][i+(1<<(k-1))]); }
@@ -185,7 +168,7 @@ template <typename T> struct vec { // Variables & Constructors
 ```cpp
 template<typename T> struct binary_lift { // Variables & Constructors
     std::vector<std::vector<T>> ADJ, UP; std::vector<T> IN, OUT; T N, L, C;
-    binary_lift(T n, std::vector<std::vector<T>> &adj, T r = 0) : ADJ(adj), N(n), L(log2(N)), C(0) {
+    binary_lift(T n, std::vector<std::vector<T>> &A, T r = 0) : ADJ(A), N(n), L(log2(N)), C(0) {
         IN.resize(N); OUT.resize(N); UP.resize(N, std::vector<T>(L+1, -1)); dfs(r, -1); }
     void dfs(T v, T p) { IN[v] = C++; UP[v][0] = p; for (T i = 1; i <= L; i++) { if (UP[v][i-1] != -1)
         UP[v][i] = UP[UP[v][i-1]][i-1]; } for (T u : ADJ[v]) { if (u != p) dfs(u, v); } OUT[v] = C++; }
@@ -203,8 +186,8 @@ template<typename T> struct binary_lift { // Variables & Constructors
 ```cpp
 template<typename T> struct heavy_decomp { // Variables & Constructors
     std::vector<std::vector<T>> ADJ; std::vector<T> PAR, DEP, HVY, POS, VAL, SEG, HD; T N, P; T (*OP)(T, T);
-    heavy_decomp(T n, std::vector<std::vector<T>> &adj, std::vector<T> &val, T (*op)(T, T), T r = 0) {
-        N = n; P = 0; ADJ = adj; VAL = val; OP = op; PAR.resize(N); DEP.resize(N); HVY.assign(N, -1); POS.resize(N);
+    heavy_decomp(T n, std::vector<std::vector<T>> &A, std::vector<T> &V, T (*C)(T, T), T r = 0) {
+        N = n; P = 0; ADJ = A; VAL = V; OP = C; PAR.resize(N); DEP.resize(N); HVY.assign(N, -1); POS.resize(N);
         HD.resize(N); dfs(r); decomp(r, r); SEG.resize(2*N); for (T i = 0; i < N; i++) update(POS[i], VAL[i]); }
 
     void pull(T p) { SEG[p] = OP(SEG[2*p], SEG[2*p+1]); } // Mutators
@@ -220,4 +203,67 @@ template<typename T> struct heavy_decomp { // Variables & Constructors
         if (DEP[HD[a]] > DEP[HD[b]]) std::swap(a, b); res = OP(res, query(POS[HD[b]], POS[b], d)); }
         if (DEP[a] > DEP[b]) std::swap(a, b); return OP(res, query(POS[a], POS[b], d)); }
 };
+```
+
+- **Matrix Struct**
+
+```cpp
+template<typename T> struct matrix { // Variables & Constructors
+    T R, C, D, MOD; std::vector<std::vector<T>> M; matrix(T N) : matrix(N, N) { }
+    matrix(T R, T C, T D = 0, T MOD = 1e9+7) : R(R), C(C), D(D), MOD(MOD), M(R, std::vector<T>(C, D)) { }
+    matrix(std::vector<std::vector<T>> M, T MOD = 1e9+7) : R(M.size()), C(M[0].size()), MOD(MOD), M(M) { }
+
+    matrix operator +(const matrix &O) const { matrix A(R, C); for (T i = 0; i < R; i++) // Operators
+        for (T q = 0; q < C; q++) A.M[i][q] = (M[i][q] + O.M[i][q]) % MOD; return A; }
+    matrix operator -(const matrix &O) const { matrix A(R, C); for (T i = 0; i < R; i++)
+        for (T q = 0; q < C; q++) A.M[i][q] = (M[i][q] - O.M[i][q]) % MOD; return A; }
+    matrix operator *(const matrix &O) const { matrix A(R, O.C); for (T i = 0; i < R; i++) for (T q = 0; q < O.C; q++)
+        for (T r = 0; r < C; r++) A.M[i][r] = (A.M[i][r] + M[i][q] * O.M[q][r]) % MOD; return A; }
+    matrix operator ^(const T &P) const { if (!P) { matrix A(R); for (T i = 0; i < R; i++) A.M[i][i] = 1; return A; }
+        matrix A = *this ^ (P >> 1); A *= A; if (P & 1) A *= *this; return A; }
+    std::vector<T> operator &(const std::vector<T> &V) const { std::vector<T> A(R); for (T i = 0; i < R; i++)
+        for (T q = 0; q < C; q++) A[i] = (A[i] + M[i][q] * V[q]) % MOD; return A; }
+
+    matrix operator +=(const matrix &O) { return *this = *this + O; } // Assignments
+    matrix operator -=(const matrix &O) { return *this = *this - O; }
+    matrix operator *=(const matrix &O) { return *this = *this * O; }
+    matrix operator ^=(const T &P) { return *this = *this ^ P; }
+    void print() { for (T i = 0; i < R; i++) for (T q = 0; q < C; q++) std::cout << M[i][q] << " \n"[q == C-1]; }
+};
+```
+
+- **Number Cache**
+
+```cpp
+template<typename T> struct num_cache {
+    std::vector<T> LPF, MOB; T MXN, MOD; // Variables
+    num_cache(T n = 1e6, T m = 1e9+7) : MXN(n), MOD(m) { // Constructors
+        LPF.assign(MXN + 1, 0); MOB.assign(MXN + 1, 1); for (int i = 2; i <= MXN; i++) {
+        if (!LPF[i]) { for (int q = i; q <= MXN; q += i) if (!LPF[q]) LPF[q] = i; }
+        if (LPF[i/LPF[i]] == LPF[i]) MOB[i] = 0; else MOB[i] = -MOB[i/LPF[i]]; } }
+
+    T lpf(T n) { return (n >= 0 && n <= MXN ? LPF[n] : -1); } // Accessors
+    T mob(T n) { return (n >= 0 && n <= MXN ? MOB[n] : -2); }
+    T inv(T x) { return (x == 1 ? 1 : (MOD - MOD / x) * inv(MOD % x) % MOD); }
+    T pow(T n, T k) { T r = 1; while (k > 0) { if (k&1) r = r*n%MOD; n = n*n%MOD; k >>= 1; } return r; }
+
+    bool aover(T a, T b) { return __builtin_add_overflow_p(a, b, (T) 0); } // Helpers
+    bool sover(T a, T b) { return __builtin_sub_overflow_p(a, b, (T) 0); }
+    bool mover(T a, T b) { return __builtin_mul_overflow_p(a, b, (T) 0); }
+    bool dover(T a, T b) { return __builtin_div_overflow_p(a, b, (T) 0); }
+};
+```
+
+- **Pragma Optimizations**
+
+```cpp
+#pragma GCC optimize("O3, unroll-loops")
+#pragma GCC target("avx2, bmi, bmi2, lzcnt, popcnt")
+```
+
+- **Program Timer**
+
+```cpp
+struct timer { clock_t S, E, CPS = CLOCKS_PER_SEC; timer() { }; void start() { S = clock(); }
+    void end() { E = clock(); std::cout << "Time Elapsed: " << (E-S)/double(CPS) << "s\n"; } };
 ```
