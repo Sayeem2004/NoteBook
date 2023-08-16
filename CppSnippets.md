@@ -1,100 +1,98 @@
 # Snippets
 
-- **CP Main**
+- **CP Main** Generic competitive programming main function. Contains some utilities for faster I/O and file redirection.
 
 ```cpp
 #include <bits/stdc++.h>
 
-int main() {
+int main(int ARGC, char* ARGV[]) {
     std::ios::sync_with_stdio(0); std::cin.tie(0);
     // freopen("", "r", stdin);
     // freopen("", "w", stdout);
 }
 ```
-- **Segment Tree**
+
+- **Program Timer** Used to time the execution of a program. No parameters needed.
+
+```cpp
+struct timer { clock_t S, E, CPS = CLOCKS_PER_SEC; timer() { }; void start() { S = clock(); }
+    void end() { E = clock(); std::cout << "Time Elapsed: " << (E-S)/double(CPS) << "s\n"; } };
+```
+
+- **Segment Tree** Used for range queries and updates in O(log N) time. Parameters needed are a node type in the tree, the number of nodes, a default value for nodes, and a function to combine nodes.
 
 ```cpp
 template<typename T> struct segment_tree {
     std::vector<T> SEG; int N; T DEF; T (*OP)(T, T); // Variables
-    segment_tree(int n, T d = NULL, T (*C)(T, T) = [](T a, T b) { return a+b; })
-        : N(n), DEF(d), OP(C) { SEG.assign(2*N, DEF); } // Constructors
+    segment_tree(int N, T D = NULL, T (*OP)(T, T) = [](T A, T B) { return A + B; })
+        : N(N), DEF(D), OP(OP) { SEG.assign(2 * N, DEF); } // Constructors
 
-    void pull(int p) { SEG[p] = OP(SEG[2*p], SEG[2*p+1]); } // Mutators
-    void update(int p, T v) { if (p < 0 || p >= N) return;
-        SEG[p += N] = v; for (p /= 2; p; p /= 2) pull(p); }
+    void pull(int P) { SEG[P] = OP(SEG[2 * P], SEG[2 * P + 1]); } // Mutators
+    void update(int P, T V) { if (P < 0 || P >= N) return; SEG[P += N] = V; for (P /= 2; P; P /= 2) pull(P); }
 
-    T get(int p) { return (p < 0 || p >= N ? DEF : SEG[p+N]); } // Accessors
-    void print() { for (T elem : SEG) std::cout << elem << " "; std::cout << "\n"; }
-    T query(int l, int r) { T ra = DEF, rb = DEF; // [l, r]
-        if (l < 0 || r < 0 || l >= N || r >= N || l > r) return DEF;
-        for (l += N, r += N+1; l < r; l /= 2, r /= 2) { if (l & 1) ra = OP(ra, SEG[l++]);
-        if (r & 1) rb = OP(SEG[--r], rb); } return OP(ra, rb); }
+    T get(int P) { return (P < 0 || P >= N ? DEF : SEG[P + N]); } // Accessors
+    void print() { for (T E : SEG) std::cout << E << " "; std::cout << "\n"; }
+    T query(int L, int R) { T RA = DEF, RB = DEF; if (L < 0 || R >= N || L > R) return DEF; // [L, R]
+        for (L += N, R += N+1; L < R; L /= 2, R /= 2) { if (L & 1) RA = OP(RA, SEG[L++]);
+        if (R & 1) RB = OP(SEG[--R], RB); } return OP(RA, RB); }
 };
 ```
 
-- **Disjoint Set Union**
+- **Disjoint Set Union** Used for maintaining sets of elements and merging them in O(1) time. Able to retrieve size of a set, number of sets, and whether two elements are in the same set in O(1) time. Parameters needed are a node type in the disjoint sets, and a vector of nodes to initialize the disjoint set with.
 
 ```cpp
 template<typename T> struct disjoint_set {
     std::unordered_map<T, T> TREE; std::unordered_map<T, int> SIZE; int CNT; // Variables
-    disjoint_set(std::vector<T> V = {}) { for (T x : V) add(x); } // Constructors
+    disjoint_set() { } disjoint_set(std::vector<T> &V) { for (T X : V) add(X); } // Constructors
 
-    bool add(T x) { return TREE.count(x) ? 0 : (CNT++, TREE[x] = x, SIZE[x] = 1); } // Mutators
-    bool unite(T x, T y) { x = get(x), y = get(y); if (x == y) return 0; CNT--; // Union by size
-        if (SIZE[x] < SIZE[y]) std::swap(x, y); TREE[y] = x; SIZE[x] += SIZE[y]; return 1; }
+    bool add(T X) { return TREE.count(X) ? 0 : (CNT++, TREE[X] = X, SIZE[X] = 1); } // Mutators
+    bool unite(T X, T Y) { X = get(X), Y = get(Y); if (X == Y) return 0; CNT--; // Union by size
+        if (SIZE[X] < SIZE[Y]) std::swap(X, Y); TREE[Y] = X; SIZE[X] += SIZE[Y]; return 1; }
 
-    int size(T x) { return SIZE[get(x)]; } bool same(T x, T y) { return get(x) == get(y); } // Accessors
-    int count() { return CNT; } T get(T x) { return TREE[x] == x ? x : TREE[x] = get(TREE[x]); }
-    void print() { for (auto [k, v] : TREE) std::printf("%d -> %d (%d)\n", k, get(k), size(k)); }
+    int size(T X) { return SIZE[get(X)]; } bool same(T X, T Y) { return get(X) == get(Y); } // Accessors
+    int count() { return CNT; } T get(T X) { return TREE[X] == X ? X : TREE[X] = get(TREE[X]); }
+    void print() { for (auto [K, V] : TREE) std::printf("%d -> %d (%d)\n", K, get(K), size(K)); }
 };
 ```
 
-- **Combinatoric Utilities**
+- **Combinatoric Utilities** Used for O(N) precalculation and O(1) query of factorial, inverses, derangements, catalan numbers, and related concepts. Parameters needed are the maximum number to precalculate, and the modulo to use.
 
 ```cpp
 template<typename T> struct combo_cache {
     std::vector<T> INV, IFT, FCT, DRG; T MXN, MOD; // Variables
-    combo_cache(T n = 1e6, T m = 1e9+7) : MXN(n), MOD(m) { init(); } // Constructors
+    combo_cache(T MXN = 1e6, T MOD = 1e9 + 7) : MXN(MXN), MOD(MOD) { // Constructors
+        INV.assign(MXN + 1, 0); INV[0] = 1; INV[1] = 1; IFT.assign(MXN + 1, 0); IFT[0] = 1; IFT[1] = 1;
+        FCT.assign(MXN + 1, 0); FCT[0] = 1; FCT[1] = 1; DRG.assign(MXN + 1, 0); DRG[0] = 1; DRG[1] = 0;
+        for (T i = 2; i <= MXN; i++) { FCT[i] = FCT[i - 1] * i % MOD; INV[i] = (MOD - MOD / i) * INV[MOD % i] % MOD;
+        IFT[i] = IFT[i - 1] * INV[i] % MOD; DRG[i] = (i - 1) * (DRG[i - 1] + DRG[i - 2]) % MOD; } }
 
-    void init() { INV.assign(MXN + 1, 0); INV[0] = INV[1] = 1; // Mutators
-        for (T i = 2; i <= MXN; i++) INV[i] = (MOD - MOD/i) * INV[MOD%i] % MOD;
-        IFT.assign(MXN + 1, 0); IFT[0] = IFT[1] = 1;
-        for (T i = 1; i <= MXN; i++) IFT[i] = IFT[i-1] * INV[i] % MOD;
-        FCT.assign(MXN + 1, 0); FCT[0] = FCT[1] = 1;
-        for (T i = 1; i <= MXN; i++) FCT[i] = FCT[i-1] * i % MOD;
-        DRG.assign(MXN + 1, 0); DRG[0] = 1; DRG[1] = 0;
-        for (T i = 2; i <= MXN; i++) DRG[i] = (i-1) * (DRG[i-1] + DRG[i-2]) % MOD; }
-
-    T inv(T n) { return (n >= 0 && n <= MXN ? INV[n] : -1); } // Accessors
-    T ift(T n) { return (n >= 0 && n <= MXN ? IFT[n] : -1); }
-    T fct(T n) { return (n >= 0 && n <= MXN ? FCT[n] : -1); }
-    T drg(T n) { return (n >= 0 && n <= MXN ? DRG[n] : -1); }
-    T pow(T n, T k) { T r = 1; while (k > 0) { if (k&1) r = r*n%MOD; n = n*n%MOD; k >>= 1; } return r; }
-    T cat(T n) { return (n >= 0 && n <= MXN/2 ? bin(2*n, n) * inv(n+1) % MOD : -1); }
-    T bin(T n, T k) { return (k < n ? fct(n) * ift(k) % MOD * ift(n-k) % MOD : -1); }
-    T str(T n, T k) { return bin(n + k - 1, n); }
+    T str(T N, T K) { return bin(N + K - 1, N); } // Accessors
+    T bin(T N, T K) { return (K < N ? fct(N) * ift(K) % MOD * ift(N - K) % MOD : -1); }
+    T cat(T N) { return (N >= 0 && N <= MXN / 2 ? bin(2 * N, N) * inv(N + 1) % MOD : -1); }
+    T pow(T N, T K) { T R = 1; while (K > 0) { if (K & 1) R = R * N % MOD; N = N * N % MOD; K >>= 1; } return R; }
+    T inv(T N) { return (N >= 0 && N <= MXN ? INV[N] : -1); } T ift(T N) { return (N >= 0 && N <= MXN ? IFT[N] : -1); }
+    T fct(T N) { return (N >= 0 && N <= MXN ? FCT[N] : -1); } T drg(T N) { return (N >= 0 && N <= MXN ? DRG[N] : -1); }
 };
 ```
 
-- **Ordered Set**
+- **Ordered Set** Used for O(log N) insertion and deletion, along with O(log N) querying of position. Parameters needed are the data type inserted into the set.
 
 ```cpp
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
 
-template <typename T> using ordered_set = __gnu_pbds::tree<
-    T, __gnu_pbds::null_type, std::less<T>, __gnu_pbds::rb_tree_tag,
-    __gnu_pbds::tree_order_statistics_node_update // find_by_order, order_of_key
->;
+template <typename T> using ordered_set = __gnu_pbds::tree< T, __gnu_pbds::null_type, std::less<T>,
+    __gnu_pbds::rb_tree_tag, __gnu_pbds::tree_order_statistics_node_update >; // find_by_order, order_of_key
 ```
 
-- **Topological Sort**
+- **Topological Sort** Used to sort a DAG in topological order, which means that for every edge (u, v), u comes before v in the ordering. Parameters needed are the number of nodes and an adjacency list.
+
 ```cpp
 template<typename T> struct topo_sort {
     std::vector<std::vector<T>> ADJ; std::vector<T> ANS, VIS; T N; // Variables
-    topo_sort(T n, std::vector<std::vector<T>> &A) : ADJ(A), N(n) { } // Constructors
+    topo_sort(T N, std::vector<std::vector<T>> &ADJ) : N(N), ADJ(ADJ) { } // Constructors
 
-    void dfs(T v) { VIS[v] = 1; for (T u : ADJ[v]) if (!VIS[u]) { dfs(u); } ANS.push_back(v); } // Accessors
+    void dfs(T V) { VIS[V] = 1; for (T U : ADJ[V]) if (!VIS[U]) { dfs(U); } ANS.push_back(V); } // Accessors
     std::vector<T> sort() { ANS.clear(); VIS.assign(N, 0); for (T i = 0; i < N; i++) {
         if (!VIS[i]) { dfs(i); } } std::reverse(ANS.begin(), ANS.end()); return ANS; }
     bool check() { std::map<T, T> MP; for (T i = 0; i < N; i++) MP[ANS[i]] = i; for (T i = 0; i < N; i++) {
@@ -102,110 +100,111 @@ template<typename T> struct topo_sort {
 };
 ```
 
-- **Least Common Ancestor**
+- **Least Common Ancestor** Used to find a node that is an ancestor of two nodes in a tree, and is as low as possible. This allows easy distance operations as well. Parameters needed are the number of nodes, an adjacency list, and a root node.
+
 ```cpp
 template<typename T> struct segment_lca { // Variables & Constructors
     std::vector<std::vector<T>> ADJ; std::vector<T> HGT, FST, VIS, EUL, SEG; T N, P, R;
-    segment_lca(T n, std::vector<std::vector<T>> &A, T r = 0) : ADJ(A), N(n), P(0) {
-        HGT.resize(N); FST.resize(N); VIS.resize(N); EUL.resize(2*N); dfs(r, 0);
-        SEG.resize(4*N); for (T i = 0; i < 2*N; i++) update(i, EUL[i]); }
+    segment_lca(T N, std::vector<std::vector<T>> &ADJ, T R = 0) : N(N), ADJ(ADJ), P(0) {
+        HGT.resize(N); FST.resize(N); VIS.resize(N); EUL.resize(2 * N); dfs(R, 0);
+        SEG.resize(4 * N); for (T i = 0; i < 2 * N; i++) update(i, EUL[i]); }
 
-    void pull(T p) { SEG[p] = comb(SEG[2*p], SEG[2*p+1]); } // Mutators
-    void update(T p, T v) { SEG[p += 2*N] = v; for (p /= 2; p; p /= 2) pull(p); }
-    void dfs(T v, T h) { VIS[v] = 1; HGT[v] = h; FST[v] = P; EUL[P++] = v;
-        for (T u : ADJ[v]) if (!VIS[u]) { dfs(u, h+1); EUL[P++] = v; } }
+    void pull(T P) { SEG[P] = comb(SEG[2 * P], SEG[2 * P + 1]); } // Mutators
+    void update(T P, T V) { SEG[P += 2 * N] = V; for (P /= 2; P; P /= 2) pull(P); }
+    void dfs(T V, T H) { VIS[V] = 1; HGT[V] = H; FST[V] = P; EUL[P++] = V;
+        for (T U : ADJ[V]) if (!VIS[U]) { dfs(U, H + 1); EUL[P++] = V; } }
 
-    T comb(T a, T b) { return HGT[a] < HGT[b] ? a : b; } // Helpers & Accessors
-    T dist(T a, T b) { return HGT[a] + HGT[b] - 2*HGT[find(a, b)]; }
-    T find(T a, T b) { if (FST[a] > FST[b]) std::swap(a, b); return query(FST[a], FST[b]); }
-    T query(T l, T r) { T ra = SEG[l += 2*N], rb = SEG[r += 2*N]; for (r++; l < r; l /= 2, r /= 2)
-        { if (l & 1) ra = comb(ra, SEG[l++]); if (r & 1) rb = comb(SEG[--r], rb); } return comb(ra, rb); }
+    T comb(T A, T B) { return HGT[A] < HGT[B] ? A : B; } // Accessors
+    T dist(T A, T B) { return HGT[A] + HGT[B] - 2 * HGT[find(A, B)]; }
+    T find(T A, T B) { if (FST[A] > FST[B]) std::swap(A, B); return query(FST[A], FST[B]); }
+    T query(T L, T R) { T RA = SEG[L += 2 * N], RB = SEG[R += 2 * N]; for (R++; L < R; L /= 2, R /= 2)
+        { if (L & 1) RA = comb(RA, SEG[L++]); if (R & 1) RB = comb(SEG[--R], RB); } return comb(RA, RB); }
 };
 ```
 
-- **Sparse Table**
+- **Sparse Table** Used to answer static range queries in O(log N) time, and O(1) time is possible if the combination operation is idempotent, which means that OP(OP(X, X), OP(X, X)) = OP(X, X), basically overlap of intervals doesn't affect answer. Parameters needed are the number of nodes, a vector of nodes, and a combination function.
 
 ```cpp
 template<typename T> struct sparse_table {
     std::vector<std::vector<T>> ST; int N, K; T (*OP)(T, T); // Variables & Constructors
-    sparse_table(int n, std::vector<T> &V, T (*C)(T, T) = [](T a, T b) { return std::min(a, b); }) : N(n), OP(C) {
-        K = log2(N); ST.assign(K+1, std::vector<T>(N)); std::copy(V.begin(), V.end(), ST[0].begin());
+    sparse_table(int N, std::vector<T> &V, T (*OP)(T, T) = [](T A, T B) { return std::min(A, B); }) : N(N), OP(OP) {
+        K = log2(N); ST.assign(K + 1, std::vector<T>(N)); std::copy(V.begin(), V.end(), ST[0].begin());
         for (int k = 1; k <= K; k++) for (int i = 0; i + (1 << k) <= N; i++)
-        ST[k][i] = OP(ST[k-1][i], ST[k-1][i+(1<<(k-1))]); }
+        ST[k][i] = OP(ST[k - 1][i], ST[k - 1][i + (1 << (k - 1))]); }
 
-    int log2(int n) { return 31 - __builtin_clz(n); } // Helpers & Accessors
-    void print() { for (auto V : ST) { for (T v : V) std::cout << v << " "; std::cout << "\n"; } }
-    T idem(int l, int r) { int k = log2(r-l+1); return OP(ST[k][l], ST[k][r-(1<<k)+1]); } // [l, r]
-    T query(int l, int r, int d = 0) { T val = d; for (int i = K; i >= 0; i--) // [l, r]
-        if (1<<i <= r - l + 1) { val = OP(val, ST[i][l]); l += (1<<i); } return val; }
+    int log2(int N) { return 31 - __builtin_clz(N); } // Helpers & Accessors
+    void print() { for (auto VEC : ST) { for (T V : VEC) std::cout << V << " "; std::cout << "\n"; } }
+    T idem(int L, int R) { int K = log2(R - L + 1); return OP(ST[K][L], ST[K][R - (1 << K) + 1]); } // [l, r]
+    T query(int L, int R, int D = 0) { T V = D; for (int i = K; i >= 0; i--) // [l, r]
+        if (1 << i <= R - L + 1) { V = OP(V, ST[i][L]); L += (1 << i); } return V; }
 };
 ```
 
-- **Point Geometry**
+- **Point Geometry** Used for basic point geometry operations, also stores some useful facts about these operations in the comments. Parameters needed are the data type of the coordinates.
 
 ```cpp
 template <typename T> struct vec { // Variables & Constructors
-    T X, Y, Z; vec() : X(0), Y(0), Z(0) { } vec(T x) : X(x), Y(0), Z(0) { }
-    vec(T x, T y) : X(x), Y(y), Z(0) { } vec(T x, T y, T z) : X(x), Y(y), Z(z) { }
+    T X, Y, Z; vec() : X(0), Y(0), Z(0) { } vec(T X) : X(X), Y(0), Z(0) { }
+    vec(T X, T Y) : X(X), Y(Y), Z(0) { } vec(T X, T Y, T Z) : X(X), Y(Y), Z(Z) { }
     void read2() { std::cin >> X >> Y; } void read3() { std::cin >> X >> Y >> Z; }
 
-    vec operator *(const T &c) { return vec(X * c, Y * c, Z * c); } // Mutators
-    vec operator /(const T &c) { return vec(X / c, Y / c, Z / c); }
-    vec operator +(const vec &p) { return vec(X + p.X, Y + p.Y, Z + p.Z); }
-    vec operator -(const vec &p) { return vec(X - p.X, Y - p.Y, Z - p.Z); }
-    bool operator <(const vec &p) const { return std::tie(X, Y) < std::tie(p.X, p.Y); }
+    vec operator *(const T &C) { return vec(X * C, Y * C, Z * C); } // Mutators
+    vec operator /(const T &C) { return vec(X / C, Y / C, Z / C); }
+    vec operator +(const vec &P) { return vec(X + P.X, Y + P.Y, Z + P.Z); }
+    vec operator -(const vec &P) { return vec(X - P.X, Y - P.Y, Z - P.Z); }
+    bool operator <(const vec &P) const { return std::tie(X, Y) < std::tie(P.X, P.Y); }
 
-    T norm() { return X*X + Y*Y + Z*Z; } // ||X + Y|| < ||X|| + ||Y||, |X * Y| < ||X|| * ||Y||
-    T dot(vec &p) { return X*p.X + Y*p.Y + Z*p.Z; } // cos(theta), X x Y = 0 if X || Y
-    T cross2(const vec &p) { return X*p.Y - Y*p.X; } // RHR, > 0 if p CCW of this, < 0 if p CW of this
-    T tri2(vec &p, vec &q) { return (p - *this).cross2(q - *this); } // 2 * area of triangle, < 0 if p CCW q
-    vec cross3(vec &p) { return vec(Y*p.Z - Z*p.Y, Z*p.X - X*p.Z, X*p.Y - Y*p.X); } // sin(theta), X x Y = -Y x X
+    T norm() { return X * X + Y * Y + Z * Z; } // ||X + Y|| < ||X|| + ||Y||, |X * Y| < ||X|| * ||Y||
+    T dot(vec &P) { return X * P.X + Y * P.Y + Z * P.Z; } // cos(theta), X x Y = 0 if X || Y
+    T cross2(const vec &P) { return X * P.Y - Y * P.X; } // RHR, > 0 if p CCW of this, < 0 if p CW of this
+    T tri2(vec &P, vec &Q) { return (P - *this).cross2(Q - *this); } // 2 * area of triangle, < 0 if p CCW q
+    vec cross3(vec &P) { return vec(Y * P.Z - Z * P.Y, Z * P.X - X * P.Z, X * P.Y - Y * P.X); } // sin, X x Y = -Y x X
 };
 ```
 
-- **Binary Lifting**
+- **Binary Lifting** Used to find the Kth ancestor of a node in a tree in O(log N), which then allows for O(log N) LCA. Parameters needed are the number of nodes, an adjacency list, and a root node.
 
 ```cpp
 template<typename T> struct binary_lift { // Variables & Constructors
     std::vector<std::vector<T>> ADJ, UP; std::vector<T> IN, OUT; T N, L, C;
-    binary_lift(T n, std::vector<std::vector<T>> &A, T r = 0) : ADJ(A), N(n), L(log2(N)), C(0) {
-        IN.resize(N); OUT.resize(N); UP.resize(N, std::vector<T>(L+1, -1)); dfs(r, -1); }
-    void dfs(T v, T p) { IN[v] = C++; UP[v][0] = p; for (T i = 1; i <= L; i++) { if (UP[v][i-1] != -1)
-        UP[v][i] = UP[UP[v][i-1]][i-1]; } for (T u : ADJ[v]) { if (u != p) dfs(u, v); } OUT[v] = C++; }
+    binary_lift(T N, std::vector<std::vector<T>> &ADJ, T R = 0) : N(N), ADJ(ADJ), L(log2(N)), C(0) {
+        IN.resize(N); OUT.resize(N); UP.resize(N, std::vector<T>(L + 1, -1)); dfs(R, -1); }
+    void dfs(T V, T P) { IN[V] = C++; UP[V][0] = P; for (T i = 1; i <= L; i++) { if (UP[V][i - 1] != -1)
+        UP[V][i] = UP[UP[V][i - 1]][i - 1]; } for (T U : ADJ[V]) { if (U != P) dfs(U, V); } OUT[V] = C++; }
 
-    T log2(T n) { return 31 - __builtin_clz(n); } // Helpers & Accessors
-    bool anc(T v, T u) { return IN[v] <= IN[u] && OUT[v] >= OUT[u]; }
-    T jump(T v, T k) { for (T i = 0; i <= L; i++) { if (k & (1 << i)) { if ((v = UP[v][i]) == -1) break; } } return v; }
-    T lca(T v, T u) { if (anc(v, u)) return v; if (anc(u, v)) return u; for (T i = L; i >= 0; i--)
-        { if (!anc(UP[v][i], u)) v = UP[v][i]; } return UP[v][0]; }
+    T log2(T N) { return 31 - __builtin_clz(N); } // Helpers & Accessors
+    bool anc(T V, T U) { return IN[V] <= IN[U] && OUT[V] >= OUT[U]; }
+    T jump(T V, T K) { for (T i = 0; i <= L; i++) { if (K & (1 << i)) { if ((V = UP[V][i]) == -1) break; } } return V; }
+    T lca(T V, T U) { if (anc(V, U)) return V; if (anc(U, V)) return U; for (T i = L; i >= 0; i--)
+        { if (!anc(UP[V][i], U)) V = UP[V][i]; } return UP[V][0]; }
 };
 ```
 
-- **Heavy Light Decomposition**
+- **Heavy Light Decomposition** Used to split a tree into O(log N) paths such that the path from any node to the root is the concatenation of some of these paths. This allows for O(log N) path queries using segment tree. Parameters needed are the number of nodes, an adjacency list, a value for each node, and a combination function.
 
 ```cpp
 template<typename T> struct heavy_decomp { // Variables & Constructors
     std::vector<std::vector<T>> ADJ; std::vector<T> PAR, DEP, HVY, POS, VAL, SEG, HD; T N, P; T (*OP)(T, T);
-    heavy_decomp(T n, std::vector<std::vector<T>> &A, std::vector<T> &V, T (*C)(T, T), T r = 0) {
-        N = n; P = 0; ADJ = A; VAL = V; OP = C; PAR.resize(N); DEP.resize(N); HVY.assign(N, -1); POS.resize(N);
-        HD.resize(N); dfs(r); decomp(r, r); SEG.resize(2*N); for (T i = 0; i < N; i++) update(POS[i], VAL[i]); }
+    heavy_decomp(T N, std::vector<std::vector<T>> &ADJ, std::vector<T> &VAL, T (*OP)(T, T), T R = 0) {
+        N = N; P = 0; ADJ = ADJ; VAL = VAL; OP = OP; PAR.resize(N); DEP.resize(N); HVY.assign(N, -1); POS.resize(N);
+        HD.resize(N); dfs(R); decomp(R, R); SEG.resize(2 * N); for (T i = 0; i < N; i++) update(POS[i], VAL[i]); }
 
-    void pull(T p) { SEG[p] = OP(SEG[2*p], SEG[2*p+1]); } // Mutators
-    void update(T p, T v) { SEG[p += N] = v; for (p /= 2; p; p /= 2) pull(p); }
-    int dfs(T v) { T sz = 1, mx = 0; for (T u : ADJ[v]) if (u != PAR[v]) { PAR[u] = v; DEP[u] = DEP[v] + 1;
-        T usz = dfs(u); sz += usz; if (usz > mx) { mx = usz; HVY[v] = u; } } return sz; }
-    void decomp(T v, T h) { POS[v] = P++; HD[v] = h; if (HVY[v] != -1) decomp(HVY[v], h);
-        for (T u : ADJ[v]) if (u != PAR[v] && u != HVY[v]) decomp(u, u); }
+    void pull(T P) { SEG[P] = OP(SEG[2 * P], SEG[2 * P + 1]); } // Mutators
+    void update(T P, T V) { SEG[P += N] = V; for (P /= 2; P; P /= 2) pull(P); }
+    int dfs(T V) { T SZ = 1, MX = 0; for (T U : ADJ[V]) if (U != PAR[V]) { PAR[U] = V; DEP[U] = DEP[V] + 1;
+        T USZ = dfs(U); SZ += USZ; if (USZ > MX) { MX = USZ; HVY[V] = U; } } return SZ; }
+    void decomp(T V, T H) { POS[V] = P++; HD[V] = H; if (HVY[V] != -1) decomp(HVY[V], H);
+        for (T U : ADJ[V]) if (U != PAR[V] && U != HVY[V]) decomp(U, U); }
 
-    T query(T l, T r, T d = 0) { T ra = d, rb = d; for (l += N, r += N+1; l < r; l /= 2, r /= 2) { // Accessors
-        if (l & 1) ra = OP(ra, SEG[l++]); if (r & 1) rb = OP(SEG[--r], rb); } return OP(ra, rb); }
-    T calc(T a, T b, T d = 0) { T res = d; for (; HD[a] != HD[b]; b = PAR[HD[b]]) {
-        if (DEP[HD[a]] > DEP[HD[b]]) std::swap(a, b); res = OP(res, query(POS[HD[b]], POS[b], d)); }
-        if (DEP[a] > DEP[b]) std::swap(a, b); return OP(res, query(POS[a], POS[b], d)); }
+    T query(T L, T R, T D = 0) { T RA = D, RB = D; for (L += N, R += N + 1; L < R; L /= 2, R /= 2) { // Accessors
+        if (L & 1) RA = OP(RA, SEG[L++]); if (R & 1) RB = OP(SEG[--R], RB); } return OP(RA, RB); }
+    T calc(T A, T B, T D = 0) { T RES = D; for (; HD[A] != HD[B]; B = PAR[HD[B]]) {
+        if (DEP[HD[A]] > DEP[HD[B]]) std::swap(A, B); RES = OP(RES, query(POS[HD[B]], POS[B], D)); }
+        if (DEP[A] > DEP[B]) std::swap(A, B); return OP(RES, query(POS[A], POS[B], D)); }
 };
 ```
 
-- **Matrix Struct**
+- **Matrix Struct** Used for matrix operations in O(N^3) time. Parameters needed are the data type of the matrix, row size, column size, default value, and modulo. Uses binary exponentiation to speed up matrix exponentiation.
 
 ```cpp
 template<typename T> struct matrix { // Variables & Constructors
@@ -228,42 +227,28 @@ template<typename T> struct matrix { // Variables & Constructors
     matrix operator -=(const matrix &O) { return *this = *this - O; }
     matrix operator *=(const matrix &O) { return *this = *this * O; }
     matrix operator ^=(const T &P) { return *this = *this ^ P; }
-    void print() { for (T i = 0; i < R; i++) for (T q = 0; q < C; q++) std::cout << M[i][q] << " \n"[q == C-1]; }
+    void print() { for (T i = 0; i < R; i++) for (T q = 0; q < C; q++) std::cout << M[i][q] << " \n"[q == C - 1]; }
 };
 ```
 
-- **Number Cache**
+- **Number Cache** Used to precalculate prime factors and the mobius function in O(N log N) time, and then allows for O(1) access to these values. Also contains some useful inverse, power, and overflow functions. Parameters needed are the maximum number to precalculate, and the modulo to use.
 
 ```cpp
 template<typename T> struct num_cache {
     std::vector<T> LPF, MOB; T MXN, MOD; // Variables
-    num_cache(T n = 1e6, T m = 1e9+7) : MXN(n), MOD(m) { // Constructors
+    num_cache(T MXN = 1e6, T MOD = 1e9+7) : MXN(MXN), MOD(MOD) { // Constructors
         LPF.assign(MXN + 1, 0); MOB.assign(MXN + 1, 1); for (int i = 2; i <= MXN; i++) {
         if (!LPF[i]) { for (int q = i; q <= MXN; q += i) if (!LPF[q]) LPF[q] = i; }
         if (LPF[i/LPF[i]] == LPF[i]) MOB[i] = 0; else MOB[i] = -MOB[i/LPF[i]]; } }
 
-    T lpf(T n) { return (n >= 0 && n <= MXN ? LPF[n] : -1); } // Accessors
-    T mob(T n) { return (n >= 0 && n <= MXN ? MOB[n] : -2); }
-    T inv(T x) { return (x == 1 ? 1 : (MOD - MOD / x) * inv(MOD % x) % MOD); }
-    T pow(T n, T k) { T r = 1; while (k > 0) { if (k&1) r = r*n%MOD; n = n*n%MOD; k >>= 1; } return r; }
+    T lpf(T N) { return (N >= 0 && N <= MXN ? LPF[N] : -1); } // Accessors
+    T mob(T N) { return (N >= 0 && N <= MXN ? MOB[N] : -2); }
+    T inv(T X) { return (X == 1 ? 1 : (MOD - MOD / X) * inv(MOD % X) % MOD); }
+    T pow(T N, T K) { T R = 1; while (K > 0) { if (K & 1) R = R * N % MOD; N = N * N % MOD; K >>= 1; } return R; }
 
-    bool aover(T a, T b) { return __builtin_add_overflow_p(a, b, (T) 0); } // Helpers
-    bool sover(T a, T b) { return __builtin_sub_overflow_p(a, b, (T) 0); }
-    bool mover(T a, T b) { return __builtin_mul_overflow_p(a, b, (T) 0); }
-    bool dover(T a, T b) { return __builtin_div_overflow_p(a, b, (T) 0); }
+    bool aover(T A, T B) { return __builtin_add_overflow_p(A, B, (T) 0); } // Helpers
+    bool sover(T A, T B) { return __builtin_sub_overflow_p(A, B, (T) 0); }
+    bool mover(T A, T B) { return __builtin_mul_overflow_p(A, B, (T) 0); }
+    bool dover(T A, T B) { return __builtin_div_overflow_p(A, B, (T) 0); }
 };
-```
-
-- **Pragma Optimizations**
-
-```cpp
-#pragma GCC optimize("O3, unroll-loops")
-#pragma GCC target("avx2, bmi, bmi2, lzcnt, popcnt")
-```
-
-- **Program Timer**
-
-```cpp
-struct timer { clock_t S, E, CPS = CLOCKS_PER_SEC; timer() { }; void start() { S = clock(); }
-    void end() { E = clock(); std::cout << "Time Elapsed: " << (E-S)/double(CPS) << "s\n"; } };
 ```
